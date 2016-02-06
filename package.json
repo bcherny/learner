@@ -4,11 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "tsc learner.ts; node learner.js"
   },
   "author": "Boris Cherny <boris@performancejs.com> (http://performancejs.com/)",
   "license": "MIT",
   "dependencies": {
     "lodash": "^4.2.1"
+  },
+  "devDependencies": {
+    "pretty-tree": "^1.0.0",
+    "tsc": "^1.20150623.0"
   }
 }

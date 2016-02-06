@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "out": "learner.js",
+    "target": "es5"
+  },
+  "files": [
+    "learner.ts"
+  ]
+}

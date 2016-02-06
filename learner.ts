@@ -14,47 +14,63 @@
   ] => ['a', 'b', 'c', 'd', 'e', 'o']
 */
 
+const prettyTree = require('pretty-tree')
+
+class TreeSet {
+  constructor(public val: string, public children: TreeSet[] = []) {}
+  public includesVal (a: string): boolean {
+    return this.val === a || this.children.some(_ => _.includesVal(a))
+  }
+  public getByVal (a: string): TreeSet|void {
+    switch (this.val) {
+      case a: return this
+      default: return this.children.map(_ => _.getByVal(a))[0]
+    }
+  }
+  public append (a: TreeSet): TreeSet {
+    this.children.push(a)
+    return this
+  }
+  public toString (): string {
+    return this.children.length
+      ? `(${this.val} => ${this.children.map(_ => _.toString())})`
+      : this.val
+  }
+  public toPrettyPrintString () {
+    return prettyTree({
+      label: this.val,
+      nodes: this.children.map(_ => _.toPrettyPrintString())
+    })
+  }
+}
+
 class Learner {
-
-  constructor(){
-    this.state = {
-      learnedOrder: []
-    }
+  private state = {
+    tree: new TreeSet('root')
   }
-  knows (a: string): boolean {
-    return this.state.learnedOrder.indexOf(a) > -1
+  public getTree (): string {
+    return this.state.tree.toString()
   }
-  isBefore (a: string, b: string): boolean|void {
-    if (!this.knows(a) || !this.knows(b)) {
-      return undefined
-    }
-    return this.state.learnedOrder.indexOf(a) < this.state.learnedOrder.indexOf(b)
+  public isAmbiguous(): boolean {
+    return this.state.tree.children.length > 1 || this.state.tree.children.some(_ => _.children.length > 1)
   }
-  learn (a: string, b: string) {
-
-    if (this.knows(a) && this.knows(b)) {
-      if (this.isBefore(a, b)) {
-        log(`already learned fact: ${a} goes before ${b}`)
-      } else {
-        log(`contradictory fact! ordering of ${a} and ${b} is undefined!`)
-      }
-    } else if (this.knows(a)) {
-      this.state.learnedOrder = insertAtIndex(b, this.state.learnedOrder.indexOf(a) + 1, this.state.learnedOrder)
-      log(`learned fact: ${a} goes before ${b} (learned b)`)
-      log(`world: [${this.getLearnedOrder().join(',')}]`)
-    } else if (this.knows(b)) {
-      this.state.learnedOrder = insertAtIndex(a, this.state.learnedOrder.indexOf(b) - 1, this.state.learnedOrder)
-      log(`learned fact: ${a} goes before ${b} (learned a)`)
-      log(`world: [${this.getLearnedOrder().join(',')}]`)
+  public learn (a: string, b: string): void {
+    if (this.state.tree.includesVal(b)) {
+      // TODO
+      return
+    } else if (this.state.tree.includesVal(a)) {
+      console.info(`learned: ${a} > ${b} (appending to ${b} to ${a})`)
+      console.log('getByVal', a, this.state.tree.getByVal(a))
+      this.state.tree.getByVal(a).append(new TreeSet(b))
     } else {
-      this.state.learnedOrder = insertAtIndex(b, 0, this.state.learnedOrder)
-      this.state.learnedOrder = insertAtIndex(a, 0, this.state.learnedOrder)
-      log(`learned fact: ${a} goes before ${b} (learned both)`)
-      log(`world: [${this.getLearnedOrder().join(',')}]`)
+      console.info(`learned: ${a} > ${b} (appending ${b} to ${a} to root)`)
+      const _a = new TreeSet(a)
+      _a.append(new TreeSet(b))
+      this.state.tree.getByVal('root').append(_a)
     }
-
+    console.info(`  world: ${this.getTree()}`)
   }
-  train (as: string[]) {
+  public train (as: string[]): void {
     as.reduce((a, b) => {
       const a0 = a.charAt(0)
       const b0 = b.charAt(0)
@@ -66,14 +82,13 @@ class Learner {
       return b
     })
   }
-  
-  getLearnedOrder(): string[] {
-    return this.state.learnedOrder
+  public toPrettyPrintString() {
+    return this.state.tree.toPrettyPrintString()
   }
 }
 
-const learner = new Learner
-learner.train([
+const myLearner = new Learner
+myLearner.train([
   'alpha',
   'baby',
   'beta',
@@ -81,19 +96,5 @@ learner.train([
   'dad',
   'dog'
 ])
-
-log(learner.getLearnedOrder().join(', '))
-
-// immutable splice
-function insertAtIndex<A>(element: A, index: number, array: A[]): A[] {
-  return array.slice(0, index).concat(element).concat(array.slice(index))
-}
-
-// log for node and codepen
-function log (a: string): void {
-  if (typeof document != 'undefined') {
-    document.body.innerHTML += a + '<br>'
-  } else {
-    console.log(a)
-  }
-}
+console.log(`   done: ${myLearner.toPrettyPrintString()}`)
+console.log(`is ambiguous: ${myLearner.isAmbiguous()}`)
